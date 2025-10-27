@@ -45,31 +45,56 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+    public ResponseEntity<Map<String, Object>> createUser(@Valid @RequestBody User user) {
+        Map<String, Object> response = new HashMap<>();
+        
         if (userService.existsByUsername(user.getUsername())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            response.put("message", "Username already exists");
+            response.put("field", "username");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
         if (userService.existsByEmail(user.getEmail())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            response.put("message", "Email already exists");
+            response.put("field", "email");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
+        
         User savedUser = userService.saveUser(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
+        response.put("message", "User created successfully");
+        response.put("user", savedUser);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
+    public ResponseEntity<Map<String, Object>> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
+        Map<String, Object> response = new HashMap<>();
+        
         try {
             User updatedUser = userService.updateUser(id, user);
-            return ResponseEntity.ok(updatedUser);
+            response.put("message", "User updated successfully");
+            response.put("user", updatedUser);
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            response.put("message", "User not found");
+            response.put("id", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            userService.deleteUser(id);
+            response.put("message", "User deleted successfully");
+            response.put("id", id);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            response.put("message", "User not found");
+            response.put("id", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
     }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
